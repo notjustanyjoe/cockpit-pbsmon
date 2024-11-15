@@ -1,6 +1,8 @@
-# Cockpit Starter Kit
+# Cockpit PBS Monitor Plugin
 
-Scaffolding for a [Cockpit](https://cockpit-project.org/) module.
+This is a PBS Monitor Plugin to be used either on a PBS Server or Client with already working PBS commands for the scheduler. The install and configuration of openPBS is outside the scope of this document.
+
+This plugin was created using the Scaffolding for a [Cockpit](https://cockpit-project.org/) module from the Cockpit Project [Starter-Kit](ttps://github.com/cockpit-project/starter-kit.git)
 
 # Development dependencies
 
@@ -8,8 +10,9 @@ On Debian/Ubuntu:
 
     sudo apt install gettext nodejs npm make
 
-On Fedora:
+On Fedora/RHEL:
 
+    sudo dnf module enable nodejs:22
     sudo dnf install gettext nodejs npm make
 
 
@@ -18,10 +21,12 @@ On Fedora:
 These commands check out the source and build it into the `dist/` directory:
 
 ```
-git clone https://github.com/cockpit-project/starter-kit.git
-cd starter-kit
+git clone https://github.com/notjustanyjoe/cockpit-pbsmon.git
+cd cockpit-pbsmon
 make
 ```
+> This may still need to be modified as the src code is working but the rest of 
+> the starter-kit scaffolding is still in place. 
 
 # Installing
 
@@ -39,7 +44,7 @@ this manually:
 
 ```
 mkdir -p ~/.local/share/cockpit
-ln -s `pwd`/dist ~/.local/share/cockpit/starter-kit
+ln -s `pwd`/dist ~/.local/share/cockpit/pbsmon
 ```
 
 After changing the code and running `make` again, reload the Cockpit page in
@@ -70,7 +75,7 @@ set to upload code changes to `~/.local/share/cockpit/` instead of
 To "uninstall" the locally installed version, run `make devel-uninstall`, or
 remove manually the symlink:
 
-    rm ~/.local/share/cockpit/starter-kit
+    rm ~/.local/share/cockpit/pbsmon
 
 # Running eslint
 
