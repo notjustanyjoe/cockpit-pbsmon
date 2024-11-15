@@ -13,6 +13,7 @@ import {
   CardBody,
   Label,
 } from '@patternfly/react-core';
+import { List } from 'lucide-react';
 import { PBSJob } from '../types/pbs';
 
 interface JobsTableProps {
@@ -34,10 +35,30 @@ const getStatusColor = (status: PBSJob['status']) => {
   }
 };
 
+const getFullStatus = (status: string): PBSJob['status'] => {
+  switch (status.toLowerCase()) {
+    case 'r':
+      return 'running';
+    case 'q':
+      return 'queued';
+    case 'c':
+      return 'completed';
+    case 'e':
+      return 'error';
+    default:
+      return status as PBSJob['status'];
+  }
+};
+
 export const JobsTable: React.FC<JobsTableProps> = ({ jobs }) => {
   return (
     <Card>
-      <CardTitle>Queue Status</CardTitle>
+      <CardTitle>
+        <div className="flex items-center gap-2">
+          <List size={20} />
+          <span>Queue Status</span>
+        </div>
+      </CardTitle>
       <CardBody>
         <Table aria-label="PBS Jobs Table">
           <Thead>
@@ -62,7 +83,9 @@ export const JobsTable: React.FC<JobsTableProps> = ({ jobs }) => {
                 <Td>{job.owner}</Td>
                 <Td>{job.queue}</Td>
                 <Td>
-                  <Label color={getStatusColor(job.status)}>{job.status}</Label>
+                  <Label color={getStatusColor(getFullStatus(job.status))}>
+                    {getFullStatus(job.status)}
+                  </Label>
                 </Td>
                 <Td>{job.nodes}</Td>
                 <Td>{job.ncpus}</Td>
