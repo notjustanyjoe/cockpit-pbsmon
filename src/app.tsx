@@ -51,10 +51,10 @@ export const Application = () => {
         <>
         <Page>
             <PageSection>
-                <ClusterStatus resources={resources} />
+                <UserStorage storageInfo={storageInfo} />
             </PageSection>
             <PageSection>
-                <UserStorage storageInfo={storageInfo} />
+                <ClusterStatus resources={resources} />
             </PageSection>
             <PageSection>
                 <JobsTable jobs={jobs} />
