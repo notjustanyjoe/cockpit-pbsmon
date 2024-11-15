@@ -11,8 +11,6 @@ import {
   Card,
   CardTitle,
   CardBody,
-  Progress,
-  ProgressSize,
   Label,
 } from '@patternfly/react-core';
 import { PBSJob } from '../types/pbs';
@@ -50,8 +48,10 @@ export const JobsTable: React.FC<JobsTableProps> = ({ jobs }) => {
               <Th>Queue</Th>
               <Th>Status</Th>
               <Th>Nodes</Th>
-              <Th>Progress</Th>
+              <Th>NCPUs</Th>
+              <Th>MPIProcs</Th>
               <Th>Walltime</Th>
+              <Th>Start Time</Th>
             </Tr>
           </Thead>
           <Tbody>
@@ -65,18 +65,10 @@ export const JobsTable: React.FC<JobsTableProps> = ({ jobs }) => {
                   <Label color={getStatusColor(job.status)}>{job.status}</Label>
                 </Td>
                 <Td>{job.nodes}</Td>
-                <Td>
-                  {job.progress !== undefined ? (
-                    <Progress
-                      value={job.progress}
-                      title="Job Progress"
-                      size={ProgressSize.sm}
-                    />
-                  ) : (
-                    'N/A'
-                  )}
-                </Td>
+                <Td>{job.ncpus}</Td>
+                <Td>{job.mpiprocs}</Td>
                 <Td>{job.walltime}</Td>
+                <Td>{job.startTime}</Td>
               </Tr>
             ))}
           </Tbody>
