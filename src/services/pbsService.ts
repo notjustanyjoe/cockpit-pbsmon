@@ -110,14 +110,31 @@ export const fetchClusterResources = async (): Promise<ClusterResource[]> => {
 
         const state = getValue('state');
         const jobs = getValue('jobs').split(',').filter(Boolean);
+        const resources = getValue('resources_available.ncpus');
+        const resourcesUsed = getValue('resources_used.ncpus');
+        const memTotal = getValue('resources_available.mem');
+        const memUsed = getValue('resources_used.mem');
+
+        // Convert memory strings (e.g., "64gb" to number in GB)
+        const parseMemory = (memStr: string): number => {
+          const num = parseFloat(memStr.replace(/[^0-9.]/g, ''));
+          const unit = memStr.replace(/[0-9.]/g, '').toLowerCase();
+          switch (unit) {
+            case 'tb': return num * 1024;
+            case 'gb': return num;
+            case 'mb': return num / 1024;
+            case 'kb': return num / (1024 * 1024);
+            default: return num;
+          }
+        };
 
         return {
           nodeName,
           status: parseNodeStatus(state),
-          totalCPUs: 0,
-          usedCPUs: 0,
-          totalMemory: 0,
-          usedMemory: 0,
+          totalCPUs: parseInt(resources) || 0,
+          usedCPUs: parseInt(resourcesUsed) || 0,
+          totalMemory: parseMemory(memTotal),
+          usedMemory: parseMemory(memUsed),
           jobs
         };
       } catch (error) {
