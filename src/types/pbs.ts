@@ -5,10 +5,10 @@ export interface PBSJob {
   queue: string;
   status: 'queued' | 'running' | 'completed' | 'error';
   nodes: number;
+  ncpus: number;
+  mpiprocs: number;
   walltime: string;
-  submissionTime: string;
-  startTime?: string;
-  progress?: number;
+  startTime: string;
 }
 
 export interface ClusterResource {
