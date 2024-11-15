@@ -1,4 +1,5 @@
-import { PBSJob, ClusterResource } from '../types/pbs';
+import { PBSJob, ClusterResource, StorageInfo } from '../types/pbs';
+import cockpit from 'cockpit';
 
 // Mock data - replace with actual PBS API calls in production
 export const fetchJobs = async (): Promise<PBSJob[]> => {
@@ -51,4 +52,57 @@ export const fetchClusterResources = async (): Promise<ClusterResource[]> => {
       jobs: []
     }
   ];
+};
+
+export const fetchStorageInfo = async (): Promise<StorageInfo[]> => {
+  try {
+    // First get the current user
+    const userProcess = await cockpit.spawn(['whoami']);
+    const username = userProcess.trim();
+
+    // Create the script to check user-specific directories
+    const script = `
+      du -sb /home/${username} 2>/dev/null | cut -f1 && \
+      df -B1 /home | tail -n1 | awk '{print $2, $3, $4}' && \
+      (du -sb /scratch/${username} 2>/dev/null | cut -f1 || echo "0") && \
+      (df -B1 /scratch 2>/dev/null | tail -n1 | awk '{print $2, $3, $4}' || echo "0 0 0")
+    `;
+
+    const output = await cockpit.script(script);
+    const [
+      homeUsed,
+      homeTotal, homeTotalUsed, homeAvailable,
+      scratchUsed,
+      scratchTotal, scratchTotalUsed, scratchAvailable
+    ] = output.trim().split('\n').map(line => line.trim().split(/\s+/)).flat().map(Number);
+
+    const result: StorageInfo[] = [];
+
+    // Add home directory info
+    if (homeTotal > 0) {
+      result.push({
+        path: `/home/${username}`,
+        total: homeTotal,
+        used: homeUsed,
+        available: homeAvailable,
+        mountPoint: 'Home Directory'
+      });
+    }
+
+    // Add scratch directory info if it exists
+    if (scratchTotal > 0) {
+      result.push({
+        path: `/scratch/${username}`,
+        total: scratchTotal,
+        used: scratchUsed,
+        available: scratchAvailable,
+        mountPoint: 'Scratch Space'
+      });
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Error fetching storage info:', error);
+    return [];
+  }
 };

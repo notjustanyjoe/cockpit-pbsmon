@@ -20,3 +20,11 @@ export interface ClusterResource {
   usedMemory: number;
   jobs: string[];
 }
+
+export interface StorageInfo {
+  path: string;
+  total: number;
+  used: number;
+  available: number;
+  mountPoint: string;
+}
