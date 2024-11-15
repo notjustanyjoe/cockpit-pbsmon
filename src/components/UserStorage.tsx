@@ -36,7 +36,7 @@ export const UserStorage: React.FC<UserStorageProps> = ({ storageInfo }) => {
       <CardTitle>
         <div className="flex items-center gap-2">
           <HardDrive size={20} />
-          <span>Storage Utilization</span>
+          <span>User Storage Utilization</span>
         </div>
       </CardTitle>
       <CardBody>
