@@ -48,14 +48,7 @@ export const Application = () => {
         return () => clearInterval(interval);
     }, []);      
     return (
-        <><Card>
-            <CardTitle>PBS Cluster Monitor</CardTitle>
-            <CardBody>
-                <Alert
-                    variant="info"
-                    title={cockpit.format(_("Running on $0"), hostname)} />
-            </CardBody>
-        </Card>
+        <>
         <Page>
             <PageSection>
                 <ClusterStatus resources={resources} />
