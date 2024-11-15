@@ -2,6 +2,7 @@ import { PBSJob, ClusterResource, StorageInfo } from '../types/pbs';
 import cockpit from 'cockpit';
 
 const PBS_PATH = '/opt/pbs/bin/qstat';
+const PBSNODES_PATH = '/opt/pbs/bin/pbsnodes';
 
 export const fetchJobs = async (): Promise<PBSJob[]> => {
   try {
@@ -81,28 +82,55 @@ const parseStatus = (statusCode: string): PBSJob['status'] => {
   }
 };
 
+const parseNodeStatus = (state: string): ClusterResource['status'] => {
+  if (state.includes('down')) return 'down';
+  if (state.includes('offline')) return 'offline';
+  if (state.includes('job-exclusive')) return 'busy';
+  return 'free';
+};
+
 export const fetchClusterResources = async (): Promise<ClusterResource[]> => {
-  // Keeping mock data for now
-  return [
-    {
-      nodeName: 'compute-01',
-      status: 'busy',
-      totalCPUs: 64,
-      usedCPUs: 48,
-      totalMemory: 256,
-      usedMemory: 128,
-      jobs: ['job.123']
-    },
-    {
-      nodeName: 'compute-02',
-      status: 'free',
-      totalCPUs: 64,
-      usedCPUs: 0,
-      totalMemory: 256,
-      usedMemory: 0,
-      jobs: []
-    }
-  ];
+  try {
+    const output = await cockpit.spawn([PBSNODES_PATH, '-a'], {
+      environ: ['PATH=/opt/pbs/bin:/usr/bin:/bin'],
+      err: 'out'
+    });
+
+    const nodesSections = output.split('\n\n').filter(section => section.trim());
+    
+    const nodes = nodesSections.map(section => {
+      try {
+        const lines = section.split('\n');
+        const nodeName = lines[0].trim();
+        
+        const getValue = (key: string): string => {
+          const line = lines.find(l => l.trim().startsWith(key));
+          return line ? line.split('=')[1].trim() : '';
+        };
+
+        const state = getValue('state');
+        const jobs = getValue('jobs').split(',').filter(Boolean);
+
+        return {
+          nodeName,
+          status: parseNodeStatus(state),
+          totalCPUs: 0,
+          usedCPUs: 0,
+          totalMemory: 0,
+          usedMemory: 0,
+          jobs
+        };
+      } catch (error) {
+        console.error('Error parsing node section:', error);
+        return null;
+      }
+    });
+
+    return nodes.filter((node): node is ClusterResource => node !== null);
+  } catch (error) {
+    console.error('Error fetching cluster resources:', error);
+    return [];
+  }
 };
 
 export const fetchStorageInfo = async (): Promise<StorageInfo[]> => {
