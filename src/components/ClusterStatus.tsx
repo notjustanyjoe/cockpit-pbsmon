@@ -104,7 +104,7 @@ export const ClusterStatus: React.FC<ClusterStatusProps> = ({ resources }) => {
                     </Title>
                     <Progress
                       value={(usedCPUs / totalCPUs) * 100}
-                      title="CPU Usage"
+                      title="Cluster CPU Usage"
                       size={ProgressSize.lg}
                       label={`${usedCPUs} / ${totalCPUs} CPUs`}
                     />
@@ -119,7 +119,7 @@ export const ClusterStatus: React.FC<ClusterStatusProps> = ({ resources }) => {
                     </Title>
                     <Progress
                       value={(usedMemory / totalMemory) * 100}
-                      title="Memory Usage"
+                      title="Cluster Memory Usage"
                       size={ProgressSize.lg}
                       label={`${usedMemory.toFixed(0)} / ${totalMemory.toFixed(0)} GB`}
                     />
