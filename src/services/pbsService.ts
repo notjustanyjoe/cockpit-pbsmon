@@ -15,42 +15,36 @@ const parseNodeStatus = (state: string): ClusterResource['status'] => {
 const parseMemoryValue = (memStr: string): number => {
   if (!memStr) return 0;
   
-  // Remove any trailing 'b' and convert to lowercase
   memStr = memStr.toLowerCase().replace(/b$/, '');
   
-  // Handle PBS format (e.g., "16gb" or "1024mb")
   const match = memStr.match(/^(\d+)([kmgt])?b?$/i);
   if (!match) return 0;
   
   const value = parseInt(match[1]);
   const unit = (match[2] || '').toLowerCase();
   
-  // Convert to GB
   switch (unit) {
     case 't': return value * 1024;
     case 'g': return value;
     case 'm': return value / 1024;
     case 'k': return value / (1024 * 1024);
-    default: return value / (1024 * 1024 * 1024); // bytes
+    default: return value / (1024 * 1024 * 1024);
   }
 };
 
 export const fetchJobs = async (): Promise<PBSJob[]> => {
   try {
-    // First get list of all jobs
     const jobList = await cockpit.spawn([QSTAT_PATH], {
       environ: ['PATH=/opt/pbs/bin:/usr/bin:/bin'],
       err: 'out'
     });
 
-    // Parse job IDs from the output
     const jobIds = jobList.split('\n')
-      .slice(2) // Skip header lines
+      .slice(2)
       .map(line => line.trim())
       .filter(Boolean)
       .map(line => line.split(' ')[0]);
 
-    // Get detailed info for each job
     const jobDetails = await Promise.all(
       jobIds.map(async (jobId) => {
         try {
@@ -113,18 +107,15 @@ export const fetchClusterResources = async (): Promise<ClusterResource[]> => {
         const state = getValue('state');
         const jobs = getValue('jobs').split(',').filter(Boolean);
         
-        // CPU resources
         const totalCPUs = parseInt(getValue('resources_available.ncpus')) || 0;
         const usedCPUs = state.includes('job-exclusive') ? totalCPUs : 0;
         
-        // Memory resources
         const totalMemStr = getValue('resources_available.mem');
         const usedMemStr = getValue('resources_assigned.mem') || getValue('resources_used.mem');
         
         const totalMemory = parseMemoryValue(totalMemStr);
         let usedMemory = parseMemoryValue(usedMemStr);
         
-        // If node is job-exclusive but no memory usage reported, assume full usage
         if (state.includes('job-exclusive') && usedMemory === 0) {
           usedMemory = totalMemory;
         }
@@ -153,48 +144,50 @@ export const fetchClusterResources = async (): Promise<ClusterResource[]> => {
 
 export const fetchStorageInfo = async (): Promise<StorageInfo[]> => {
   try {
-    // First get the current user
     const userProcess = await cockpit.spawn(['whoami']);
     const username = userProcess.trim();
-
-    // Create the script to check user-specific directories
-    const script = `
-      du -sb /home/${username} 2>/dev/null | cut -f1 && \
-      df -B1 /home | tail -n1 | awk '{print $2, $3, $4}' && \
-      (du -sb /scratch/${username} 2>/dev/null | cut -f1 || echo "0") && \
-      (df -B1 /scratch 2>/dev/null | tail -n1 | awk '{print $2, $3, $4}' || echo "0 0 0")
-    `;
-
-    const output = await cockpit.script(script);
-    const [
-      homeUsed,
-      homeTotal, homeTotalUsed, homeAvailable,
-      scratchUsed,
-      scratchTotal, scratchTotalUsed, scratchAvailable
-    ] = output.trim().split('\n').map(line => line.trim().split(/\s+/)).flat().map(Number);
-
     const result: StorageInfo[] = [];
 
-    // Add home directory info
-    if (homeTotal > 0) {
-      result.push({
-        path: `/home/${username}`,
-        total: homeTotal,
-        used: homeUsed,
-        available: homeAvailable,
-        mountPoint: 'Home Directory'
-      });
+    // Check home directory
+    try {
+      const homeExists = await cockpit.script(`test -d /home/${username} && echo "exists"`);
+      if (homeExists.trim() === "exists") {
+        const homeFs = await cockpit.script(`
+          df -B1 /home/${username} | tail -n1 | awk '{print $2, $3, $4}'
+        `);
+        const [total, used, available] = homeFs.trim().split(/\s+/).map(Number);
+
+        result.push({
+          path: `/home/${username}`,
+          total,
+          used,
+          available,
+          mountPoint: 'Home Directory'
+        });
+      }
+    } catch (error) {
+      console.warn('Home directory not accessible:', error);
     }
 
-    // Add scratch directory info if it exists
-    if (scratchTotal > 0) {
-      result.push({
-        path: `/scratch/${username}`,
-        total: scratchTotal,
-        used: scratchUsed,
-        available: scratchAvailable,
-        mountPoint: 'Scratch Space'
-      });
+    // Check scratch directory
+    try {
+      const scratchExists = await cockpit.script(`test -d /scratch/${username} && echo "exists"`);
+      if (scratchExists.trim() === "exists") {
+        const scratchFs = await cockpit.script(`
+          df -B1 /scratch/${username} | tail -n1 | awk '{print $2, $3, $4}'
+        `);
+        const [total, used, available] = scratchFs.trim().split(/\s+/).map(Number);
+
+        result.push({
+          path: `/scratch/${username}`,
+          total,
+          used,
+          available,
+          mountPoint: 'Scratch Space'
+        });
+      }
+    } catch (error) {
+      console.warn('Scratch directory not accessible:', error);
     }
 
     return result;
